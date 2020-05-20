@@ -28,6 +28,14 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import lombok.NonNull;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * The different commands that can be issued by a SOCKS5 client.
  *
@@ -36,11 +44,45 @@ import lombok.NonNull;
 public enum SOCKS5Command {
     TCP_CONNECT {
         @Override
-        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
+        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) throws Exception {
+            InetAddress remoteAddress = state.address().getAddress();
+            System.out.printf("Choosing binding for remote address: %s\n", state.address());
+            InetAddress[] v4Addresses;
+            InetAddress[] v6Addresses;
+            if (remoteAddress == null) {
+                String hostname = state.address().getHostName();
+                InetAddress[] allAddresses = InetAddress.getAllByName(hostname);
+                System.out.println("Resolved addresses: " + Arrays.toString(allAddresses));
+                v4Addresses = Arrays.stream(allAddresses).filter(Inet4Address.class::isInstance).toArray(InetAddress[]::new);
+                v6Addresses = Arrays.stream(allAddresses).filter(Inet6Address.class::isInstance).toArray(InetAddress[]::new);
+                checkState(v4Addresses.length > 0 || v6Addresses.length > 0, "no remote addresses found...");
+            } else if (remoteAddress instanceof Inet4Address) {
+                v4Addresses = new InetAddress[]{remoteAddress};
+                v6Addresses = new InetAddress[0];
+            } else if (remoteAddress instanceof Inet6Address) {
+                v4Addresses = new InetAddress[0];
+                v6Addresses = new InetAddress[]{remoteAddress};
+            } else {
+                throw new IllegalArgumentException(String.valueOf(remoteAddress));
+            }
+            
+            InetAddress localAddress = state.server().balancer().next(v4Addresses.length > 0, v6Addresses.length > 0);
+            if (localAddress instanceof Inet4Address)   {
+                remoteAddress = v4Addresses[ThreadLocalRandom.current().nextInt(v4Addresses.length)];
+            } else if (localAddress instanceof Inet6Address)   {
+                remoteAddress = v6Addresses[ThreadLocalRandom.current().nextInt(v6Addresses.length)];
+            } else {
+                throw new IllegalArgumentException(String.valueOf(localAddress));
+            }
+
             Promise<Channel> promise = channel.eventLoop().newPromise();
+
+            System.out.printf("Connecting to %s from %s\n", remoteAddress, localAddress);
+
             ChannelFuture future = state.server().getClientBootstrap()
+                    .localAddress(localAddress, 0)
                     .option(ChannelOption.AUTO_READ, false)
-                    .connect(state.address())
+                    .connect(remoteAddress, state.address().getPort())
                     .addListener((ChannelFutureListener) f -> {
                         if (f.isSuccess()) {
                             promise.trySuccess(f.channel());
@@ -53,13 +95,13 @@ public enum SOCKS5Command {
     },
     TCP_BIND {
         @Override
-        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
+        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) throws Exception {
             return channel.eventLoop().newFailedFuture(new UnsupportedOperationException("TCP_BIND"));
         }
     },
     UDP_ASSOCIATE {
         @Override
-        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
+        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) throws Exception {
             return channel.eventLoop().newFailedFuture(new UnsupportedOperationException("UDP_ASSOCIATE"));
         }
     };
@@ -71,5 +113,5 @@ public enum SOCKS5Command {
         return index >= 0 && index < VALUES.length ? VALUES[index] : null;
     }
 
-    public abstract Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state);
+    public abstract Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) throws Exception;
 }

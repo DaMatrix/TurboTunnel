@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
+import net.daporkchop.turbotunnel.loadbalance.InetAddressBalancer;
 import net.daporkchop.turbotunnel.util.NoopChannelInitializer;
 
 /**
@@ -45,9 +46,12 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
     private final EventLoopGroup loopGroup;
     private final Channel serverChannel;
     private final Bootstrap clientBootstrap;
+    @Getter
+    private final InetAddressBalancer balancer;
 
-    public SOCKS5Server(@NonNull EventLoopGroupPool loopGroupPool) {
+    public SOCKS5Server(@NonNull EventLoopGroupPool loopGroupPool, @NonNull InetAddressBalancer balancer) {
         this.loopGroupPool = loopGroupPool;
+        this.balancer = balancer;
         this.loopGroup = loopGroupPool.get();
 
         this.serverChannel = new ServerBootstrap()

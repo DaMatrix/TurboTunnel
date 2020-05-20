@@ -18,25 +18,16 @@
  *
  */
 
-package net.daporkchop.turbotunnel;
+package net.daporkchop.turbotunnel.loadbalance;
 
-import net.daporkchop.lib.network.nettycommon.PorkNettyHelper;
-import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
-import net.daporkchop.turbotunnel.loadbalance.AllInterfacesRoundRobinBalancer;
-import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Server;
-
-import java.util.Scanner;
-import java.util.regex.Pattern;
+import java.net.InetAddress;
 
 /**
+ * Provides {@link InetAddress}es to be used for load balancing between multiple ones.
+ *
  * @author DaPorkchop_
  */
-public class Main {
-    public static void main(String... args) {
-        try (SOCKS5Server server = new SOCKS5Server(
-                PorkNettyHelper.getPoolTCP(),
-                new AllInterfacesRoundRobinBalancer(Pattern.compile("^(?:wlp|enp)")))) {
-            new Scanner(System.in).nextLine();
-        }
-    }
+@FunctionalInterface
+public interface InetAddressBalancer {
+    InetAddress next(boolean v4Allowed, boolean v6Allowed) throws Exception;
 }
