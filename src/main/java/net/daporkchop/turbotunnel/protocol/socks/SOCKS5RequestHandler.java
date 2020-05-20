@@ -30,6 +30,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import net.daporkchop.turbotunnel.util.BiDirectionalSocketConnector;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -48,6 +49,12 @@ import static net.daporkchop.turbotunnel.protocol.socks.SOCKS5Server.*;
 @ChannelHandler.Sharable
 public final class SOCKS5RequestHandler extends ChannelInboundHandlerAdapter {
     public static final SOCKS5RequestHandler INSTANCE = new SOCKS5RequestHandler();
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().read();
+        super.channelRegistered(ctx);
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -89,7 +96,6 @@ public final class SOCKS5RequestHandler extends ChannelInboundHandlerAdapter {
                 throw new IllegalStateException();
         }
 
-        System.out.printf("Request from %s: %s\n", ctx.channel().remoteAddress(), state);
         state.command().handle(ctx.channel(), state)
                 .addListener((GenericFutureListener<Future<Channel>>) f -> {
                     SOCKS5Status status;
@@ -126,6 +132,9 @@ public final class SOCKS5RequestHandler extends ChannelInboundHandlerAdapter {
                         buf.writeShort(address.getPort());
 
                         ctx.channel().writeAndFlush(buf);
+                        new BiDirectionalSocketConnector(ctx.channel(), channel);
+
+                        System.out.printf("Request from %s: %s (handled with local address: %s)\n", ctx.channel().remoteAddress(), state, channel.localAddress());
                     } else {
                         buf.writeByte(TYPE_IPV4);
                         buf.writeInt(0);

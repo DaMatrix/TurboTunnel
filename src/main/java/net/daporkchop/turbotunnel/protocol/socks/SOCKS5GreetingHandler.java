@@ -44,6 +44,12 @@ public final class SOCKS5GreetingHandler extends ChannelInboundHandlerAdapter {
     public static final SOCKS5GreetingHandler INSTANCE = new SOCKS5GreetingHandler();
 
     @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().read();
+        super.channelRegistered(ctx);
+    }
+
+    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         checkState(msg instanceof ByteBuf, "invalid message");
         ByteBuf data = (ByteBuf) msg;
@@ -63,7 +69,7 @@ public final class SOCKS5GreetingHandler extends ChannelInboundHandlerAdapter {
 
         ctx.channel().attr(STATE_KEY).get().auth(supportedAuth[0]);
 
-        System.out.printf("Supported authentication methods: %s\n", Arrays.toString(supportedAuth));
+        //System.out.printf("Supported authentication methods: %s\n", Arrays.toString(supportedAuth));
 
         ctx.pipeline().replace(this, "socks5", SOCKS5RequestHandler.INSTANCE);
 
@@ -72,5 +78,6 @@ public final class SOCKS5GreetingHandler extends ChannelInboundHandlerAdapter {
                         .writeByte(VERSION) //VER
                         .writeByte(supportedAuth[0].ordinal()), //CAUTH
                 ctx.voidPromise());
+        ctx.read();
     }
 }

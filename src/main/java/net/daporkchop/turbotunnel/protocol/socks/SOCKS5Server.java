@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
+import net.daporkchop.turbotunnel.util.NoopChannelInitializer;
 
 /**
  * @author DaPorkchop_
@@ -53,18 +54,22 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
                 .channelFactory(loopGroupPool.transport().channelFactorySocketServer())
                 .group(this.loopGroup)
                 .childHandler(this)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .childOption(ChannelOption.AUTO_READ, false)
                 .bind(1081).channel();
         this.serverChannel.closeFuture().addListener(f -> this.loopGroupPool.release(this.loopGroup));
 
         this.clientBootstrap = new Bootstrap()
                 .channelFactory(loopGroupPool.transport().channelFactorySocketClient())
                 .group(this.loopGroup)
-                .option(ChannelOption.SO_KEEPALIVE, true);
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .option(ChannelOption.AUTO_READ, false)
+                .handler(NoopChannelInitializer.INSTANCE);
     }
 
     @Override
     protected void initChannel(Channel ch) throws Exception {
-        System.out.println(this.serverChannel);
+        //System.out.println(this.serverChannel);
         ch.attr(STATE_KEY).set(new SOCKS5ServerState(this));
 
         ch.pipeline().addLast("socks5", SOCKS5GreetingHandler.INSTANCE);

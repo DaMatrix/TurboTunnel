@@ -22,8 +22,8 @@ package net.daporkchop.turbotunnel.protocol.socks;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelOption;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import lombok.NonNull;
@@ -39,20 +39,12 @@ public enum SOCKS5Command {
         public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
             Promise<Channel> promise = channel.eventLoop().newPromise();
             ChannelFuture future = state.server().getClientBootstrap()
-                    .handler(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                        }
-
-                        @Override
-                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                            promise.tryFailure(cause);
-                            super.exceptionCaught(ctx, cause);
-                        }
-                    })
+                    .option(ChannelOption.AUTO_READ, false)
                     .connect(state.address())
-                    .addListener(f -> {
-                        if (!f.isSuccess()) {
+                    .addListener((ChannelFutureListener) f -> {
+                        if (f.isSuccess()) {
+                            promise.trySuccess(f.channel());
+                        } else {
                             promise.tryFailure(f.cause());
                         }
                     });
