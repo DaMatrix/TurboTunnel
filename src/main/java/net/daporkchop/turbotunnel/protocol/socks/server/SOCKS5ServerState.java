@@ -18,38 +18,30 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks;
+package net.daporkchop.turbotunnel.protocol.socks.server;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Authentication;
+import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Command;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.turbotunnel.protocol.socks.SOCKS5.*;
+import java.net.InetSocketAddress;
 
 /**
  * @author DaPorkchop_
  */
-public class SOCKS5ServerHandler extends ByteToMessageDecoder {
-    private SOCKS5ServerState state = SOCKS5ServerState.GREETING;
-
-    @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        Object response = this.state.handle(ctx, in);
-        if (response != null) {
-            checkState(!in.isReadable(), "state was unable to read all data!");
-            switch (this.state) {
-                case GREETING:
-                    this.state = this.state.next();
-                    ctx.writeAndFlush(response);
-                    break;
-                case CONNECTION_REQUEST:
-                    System.out.printf("Requested %s to address %s\n", ctx.channel().attr(KEY_COMMAND).get(), ctx.channel().attr(KEY_ADDRESS).get());
-                    ctx.close();
-            }
-        }
-    }
+@ToString
+@Getter
+@Setter
+@Accessors(fluent = true)
+final class SOCKS5ServerState {
+    @NonNull
+    private SOCKS5Authentication auth;
+    @NonNull
+    private SOCKS5Command command;
+    @NonNull
+    private InetSocketAddress address;
 }

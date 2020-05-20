@@ -18,31 +18,22 @@
  *
  */
 
-package net.daporkchop.turbotunnel;
+package net.daporkchop.turbotunnel.protocol.socks.server;
 
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import net.daporkchop.lib.network.nettycommon.PorkNettyHelper;
-import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
-import net.daporkchop.turbotunnel.protocol.socks.server.SOCKS5Server;
-
-import java.util.Scanner;
+import io.netty.channel.ChannelInitializer;
+import io.netty.util.AttributeKey;
 
 /**
  * @author DaPorkchop_
  */
-public class Main {
-    public static final EventLoopGroupPool LOOP_GROUP_POOL = PorkNettyHelper.getPoolTCP();
+public class SOCKS5Server extends ChannelInitializer<Channel> {
+    static final AttributeKey<SOCKS5ServerState> STATE_KEY = AttributeKey.newInstance("socks5_state");
 
-    public static void main(String... args) {
-        Channel channel = new ServerBootstrap()
-                .channelFactory(LOOP_GROUP_POOL.transport().channelFactorySocketServer())
-                .group(LOOP_GROUP_POOL.get())
-                .childHandler(new SOCKS5Server())
-                .bind(1081).syncUninterruptibly().channel();
-        channel.closeFuture().addListener(f -> LOOP_GROUP_POOL.release(channel.eventLoop().parent()));
+    @Override
+    protected void initChannel(Channel ch) throws Exception {
+        ch.attr(STATE_KEY).set(new SOCKS5ServerState());
 
-        new Scanner(System.in).nextLine();
-        channel.close();
+        ch.pipeline().addLast("socks5", SOCKS5GreetingHandler.INSTANCE);
     }
 }

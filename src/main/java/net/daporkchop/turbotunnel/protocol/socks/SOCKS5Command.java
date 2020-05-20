@@ -33,6 +33,7 @@ public enum SOCKS5Command {
     private static final SOCKS5Command[] VALUES = values();
 
     public static SOCKS5Command fromIndex(int index) {
+        index -= 1;
         return index >= 0 && index < VALUES.length ? VALUES[index] : null;
     }
 }
