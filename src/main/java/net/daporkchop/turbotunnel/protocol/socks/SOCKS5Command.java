@@ -20,15 +20,57 @@
 
 package net.daporkchop.turbotunnel.protocol.socks;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
+import lombok.NonNull;
+
 /**
  * The different commands that can be issued by a SOCKS5 client.
  *
  * @author DaPorkchop_
  */
 public enum SOCKS5Command {
-    TCP_CONNECT,
-    TCP_BIND,
-    UDP_ASSOCIATE;
+    TCP_CONNECT {
+        @Override
+        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
+            Promise<Channel> promise = channel.eventLoop().newPromise();
+            ChannelFuture future = state.server().getClientBootstrap()
+                    .handler(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                        }
+
+                        @Override
+                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                            promise.tryFailure(cause);
+                            super.exceptionCaught(ctx, cause);
+                        }
+                    })
+                    .connect(state.address())
+                    .addListener(f -> {
+                        if (!f.isSuccess()) {
+                            promise.tryFailure(f.cause());
+                        }
+                    });
+            return promise;
+        }
+    },
+    TCP_BIND {
+        @Override
+        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
+            return channel.eventLoop().newFailedFuture(new UnsupportedOperationException("TCP_BIND"));
+        }
+    },
+    UDP_ASSOCIATE {
+        @Override
+        public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) {
+            return channel.eventLoop().newFailedFuture(new UnsupportedOperationException("UDP_ASSOCIATE"));
+        }
+    };
 
     private static final SOCKS5Command[] VALUES = values();
 
@@ -36,4 +78,6 @@ public enum SOCKS5Command {
         index -= 1;
         return index >= 0 && index < VALUES.length ? VALUES[index] : null;
     }
+
+    public abstract Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state);
 }

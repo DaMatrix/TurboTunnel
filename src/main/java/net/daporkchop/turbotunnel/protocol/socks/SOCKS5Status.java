@@ -18,30 +18,27 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks.server;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Authentication;
-import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Command;
-
-import java.net.InetSocketAddress;
+package net.daporkchop.turbotunnel.protocol.socks;
 
 /**
+ * The different response codes that may be returned by a SOCKS5 request.
+ *
  * @author DaPorkchop_
  */
-@ToString
-@Getter
-@Setter
-@Accessors(fluent = true)
-final class SOCKS5ServerState {
-    @NonNull
-    private SOCKS5Authentication auth;
-    @NonNull
-    private SOCKS5Command command;
-    @NonNull
-    private InetSocketAddress address;
+public enum SOCKS5Status {
+    REQUEST_GRANTED,
+    GENERAL_FAILURE,
+    CONNECTION_NOT_ALLOWED,
+    NETWORK_UNREACHABLE,
+    HOST_UNREACHABLE,
+    CONNECTION_REFUSED,
+    TTL_EXPIRED,
+    COMMAND_NOT_SUPPORTED,
+    ADDRESS_TYPE_NOT_SUPPORTED;
+
+    private static final SOCKS5Status[] VALUES = values();
+
+    public static SOCKS5Status fromIndex(int index) {
+        return index >= 0 && index < VALUES.length ? VALUES[index] : null;
+    }
 }

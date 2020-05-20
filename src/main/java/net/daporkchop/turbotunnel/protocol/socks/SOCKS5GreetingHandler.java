@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks.server;
+package net.daporkchop.turbotunnel.protocol.socks;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -26,65 +26,51 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Command;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.IntStream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.turbotunnel.protocol.socks.SOCKS5.*;
-import static net.daporkchop.turbotunnel.protocol.socks.server.SOCKS5Server.*;
+import static net.daporkchop.turbotunnel.protocol.socks.SOCKS5Server.*;
 
 /**
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @ChannelHandler.Sharable
-public final class SOCKS5RequestHandler extends ChannelInboundHandlerAdapter {
-    public static final SOCKS5RequestHandler INSTANCE = new SOCKS5RequestHandler();
+public final class SOCKS5GreetingHandler extends ChannelInboundHandlerAdapter {
+    public static final SOCKS5GreetingHandler INSTANCE = new SOCKS5GreetingHandler();
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         checkState(msg instanceof ByteBuf, "invalid message");
         ByteBuf data = (ByteBuf) msg;
 
-        checkState(data.readableBytes() >= 4);
-
+        checkState(data.readableBytes() >= 2);
         checkState(data.readByte() == VERSION, "Invalid version!");
+        int nauth = data.readByte() & 0xFF;
+        checkState(data.readableBytes() >= nauth);
 
-        SOCKS5ServerState state = ctx.channel().attr(STATE_KEY).get();
+        SOCKS5Authentication[] supportedAuth = IntStream.range(0, nauth)
+                .map(i -> data.readByte() & 0xFF)
+                .mapToObj(SOCKS5Authentication::fromIndex)
+                .filter(Objects::nonNull)
+                .filter(SOCKS5Authentication::supported)
+                .toArray(SOCKS5Authentication[]::new);
+        checkState(supportedAuth.length > 0, "No supported authentication modes given!");
 
-        state.command(SOCKS5Command.fromIndex(data.readByte() & 0xFF));
-        data.readByte(); //skip
+        ctx.channel().attr(STATE_KEY).get().auth(supportedAuth[0]);
 
-        switch (data.readByte() & 0xFF) {
-            case TYPE_IPV4: {
-                checkState(data.readableBytes() >= 4 + 2);
-                byte[] b = new byte[4];
-                data.readBytes(b);
-                state.address(new InetSocketAddress(InetAddress.getByAddress(b), data.readUnsignedShort()));
-            }
-            break;
-            case TYPE_IPV6: {
-                checkState(data.readableBytes() >= 16 + 2);
-                byte[] b = new byte[16];
-                data.readBytes(b);
-                state.address(new InetSocketAddress(InetAddress.getByAddress(b), data.readUnsignedShort()));
-            }
-            break;
-            case TYPE_DOMAIN: {
-                checkState(data.readableBytes() >= 1 + 2);
-                int len = data.readByte() & 0xFF;
-                checkState(data.readableBytes() >= len + 2);
-                state.address(InetSocketAddress.createUnresolved(data.readCharSequence(len, StandardCharsets.US_ASCII).toString(), data.readUnsignedShort()));
-            }
-            break;
-            default:
-                throw new IllegalStateException();
-        }
+        System.out.printf("Supported authentication methods: %s\n", Arrays.toString(supportedAuth));
 
-        System.out.printf("Request from %s: %s\n", ctx.channel().remoteAddress(), state);
-        ctx.close();
+        ctx.pipeline().replace(this, "socks5", SOCKS5RequestHandler.INSTANCE);
+
+        ctx.writeAndFlush(
+                ctx.alloc().ioBuffer(2, 2) //respond with server choice
+                        .writeByte(VERSION) //VER
+                        .writeByte(supportedAuth[0].ordinal()), //CAUTH
+                ctx.voidPromise());
     }
 }

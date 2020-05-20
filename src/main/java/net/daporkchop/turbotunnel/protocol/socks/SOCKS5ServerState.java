@@ -18,22 +18,33 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks.server;
+package net.daporkchop.turbotunnel.protocol.socks;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.util.AttributeKey;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author DaPorkchop_
  */
-public class SOCKS5Server extends ChannelInitializer<Channel> {
-    static final AttributeKey<SOCKS5ServerState> STATE_KEY = AttributeKey.newInstance("socks5_state");
+@ToString(exclude = {"server"})
+@Getter
+@Setter
+@Accessors(fluent = true)
+public final class SOCKS5ServerState {
+    private final SOCKS5Server server;
+    @NonNull
+    private SOCKS5Authentication auth;
+    @NonNull
+    private SOCKS5Command command;
+    @NonNull
+    private InetSocketAddress address;
 
-    @Override
-    protected void initChannel(Channel ch) throws Exception {
-        ch.attr(STATE_KEY).set(new SOCKS5ServerState());
-
-        ch.pipeline().addLast("socks5", SOCKS5GreetingHandler.INSTANCE);
+    public SOCKS5ServerState(@NonNull SOCKS5Server server) {
+        this.server = server;
     }
 }
