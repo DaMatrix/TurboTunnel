@@ -13,7 +13,4 @@ run/
 *.class
 *.log
 
-# native libraries
-/**/*.so
-/**/*.dll
-/**/*.o
+config.json

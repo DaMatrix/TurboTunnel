@@ -41,10 +41,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class AllInterfacesRoundRobinBalancer implements InetAddressBalancer {
+public class AllInterfacesRandomBalancer implements InetAddressBalancer {
     private final Ref<Matcher> matcherCache;
 
-    public AllInterfacesRoundRobinBalancer(@NonNull Pattern interfaceFilter) {
+    public AllInterfacesRandomBalancer(@NonNull Pattern interfaceFilter) {
         this.matcherCache = ThreadRef.regex(interfaceFilter);
     }
 

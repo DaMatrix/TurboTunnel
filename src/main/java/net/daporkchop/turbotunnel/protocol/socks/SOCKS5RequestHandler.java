@@ -37,6 +37,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.NoSuchElementException;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.turbotunnel.protocol.socks.SOCKS5.*;
@@ -132,7 +133,12 @@ public final class SOCKS5RequestHandler extends ChannelInboundHandlerAdapter {
                         buf.writeShort(address.getPort());
 
                         ctx.channel().writeAndFlush(buf);
-                        ctx.channel().pipeline().remove(this);
+                        try {
+                            ctx.channel().pipeline().remove(this);
+                        } catch (NoSuchElementException e) {
+                            //removed
+                            return;
+                        }
                         new BiDirectionalSocketConnector(ctx.channel(), channel);
 
                         System.out.printf("Request from %s: %s (handled with local address: %s)\n", ctx.channel().remoteAddress(), state, channel.localAddress());

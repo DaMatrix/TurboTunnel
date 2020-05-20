@@ -20,23 +20,54 @@
 
 package net.daporkchop.turbotunnel;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.daporkchop.lib.common.function.throwing.EFunction;
 import net.daporkchop.lib.network.nettycommon.PorkNettyHelper;
-import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
-import net.daporkchop.turbotunnel.loadbalance.AllInterfacesRoundRobinBalancer;
+import net.daporkchop.turbotunnel.loadbalance.FixedRandomBalancer;
+import net.daporkchop.turbotunnel.loadbalance.InetAddressBalancer;
 import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Server;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 /**
  * @author DaPorkchop_
  */
 public class Main {
-    public static void main(String... args) {
-        try (SOCKS5Server server = new SOCKS5Server(
-                PorkNettyHelper.getPoolTCP(),
-                //new AllInterfacesRoundRobinBalancer(Pattern.compile("^enp")))) {
-                new AllInterfacesRoundRobinBalancer(Pattern.compile("^(?:wlp|enp)")))) {
+    public static void main(String... args) throws UnknownHostException, IOException {
+        String configName = args.length > 0 ? args[0] : "config.json";
+
+        JsonObject obj;
+        try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(configName), StandardCharsets.UTF_8))) {
+            obj = new JsonParser().parse(reader).getAsJsonObject();
+        }
+
+        InetAddressBalancer balancer = new FixedRandomBalancer(
+                StreamSupport.stream(obj.getAsJsonArray("v4").spliterator(), false)
+                        .map(JsonElement::getAsString)
+                        .map((EFunction<String, InetAddress>) InetAddress::getByName)
+                        .map(Inet4Address.class::cast)
+                        .toArray(Inet4Address[]::new),
+                StreamSupport.stream(obj.getAsJsonArray("v6").spliterator(), false)
+                        .map(JsonElement::getAsString)
+                        .map((EFunction<String, InetAddress>) InetAddress::getByName)
+                        .map(Inet6Address.class::cast)
+                        .toArray(Inet6Address[]::new),
+                obj.get("prefer6").getAsBoolean());
+
+        try (SOCKS5Server server = new SOCKS5Server(PorkNettyHelper.getPoolTCP(), balancer)) {
             new Scanner(System.in).nextLine();
         }
     }

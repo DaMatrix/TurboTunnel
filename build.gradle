@@ -62,6 +62,8 @@ dependencies {
 
     shade "io.netty:netty-handler:$nettyVersion"
 
+    shade "com.google.code.gson:gson:2.8.5"
+
     testCompile "junit:junit:$junitVersion"
 
     compileOnly "org.projectlombok:lombok:$lombokVersion"
