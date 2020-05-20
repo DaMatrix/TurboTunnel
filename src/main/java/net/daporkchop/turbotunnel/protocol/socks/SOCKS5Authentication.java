@@ -20,17 +20,35 @@
 
 package net.daporkchop.turbotunnel.protocol.socks;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+
 /**
  * The different authentication modes supported by the SOCKS5 protocol.
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
+@Accessors(fluent = true)
 public enum SOCKS5Authentication {
-    NO_AUTHENTICATION;
+    NO_AUTHENTICATION(true),
+    GSSAPI(false),
+    USERNAME_PASSWORD(false),
+    CHALLENGE_HANDSHAKE(false),
+    UNASSIGNED(false),
+    CHALLENGE_RESPONSE(false),
+    SSL(false),
+    NDS(false),
+    MULTI_AUTHENTICATION(false),
+    JSON_PARAM(false);
 
     private static final SOCKS5Authentication[] VALUES = values();
 
     public static SOCKS5Authentication fromIndex(int index) {
         return index >= 0 && index < VALUES.length ? VALUES[index] : null;
     }
+
+    private final boolean supported;
 }

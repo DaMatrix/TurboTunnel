@@ -27,6 +27,7 @@ import lombok.NonNull;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
@@ -45,27 +46,29 @@ public enum SOCKS5ServerState {
             if (data.readableBytes() < 2) {
                 return null;
             }
-            int readerIndex = data.readerIndex();
-            int nauth = data.getByte(readerIndex + 1) & 0xFF;
-            if (data.readableBytes() < nauth + 2) {
+            data.markReaderIndex();
+            checkState(data.readByte() == VERSION, "Invalid version!");
+            int nauth = data.readByte() & 0xFF;
+            if (data.readableBytes() < nauth) {
+                data.resetReaderIndex();
                 return null;
             }
 
-            //we have enough data to read the whole packet, continue:
-            checkState(data.readByte() == VERSION, "Invalid version!");
-            data.readByte();
-            SOCKS5Authentication[] SUPPORTED_AUTH = IntStream.range(0, nauth)
-                    .map(i -> data.getByte(readerIndex + i + 2) & 0xFF)
+            SOCKS5Authentication[] supportedAuth = IntStream.range(0, nauth)
+                    .map(i -> data.readByte() & 0xFF)
                     .mapToObj(SOCKS5Authentication::fromIndex)
                     .filter(Objects::nonNull)
+                    .filter(SOCKS5Authentication::supported)
                     .toArray(SOCKS5Authentication[]::new);
-            checkState(SUPPORTED_AUTH.length > 0, "No supported authentication modes given!");
+            checkState(supportedAuth.length > 0, "No supported authentication modes given!");
 
-            ctx.channel().attr(KEY_AUTHENTICATION).set(SUPPORTED_AUTH[0]);
+            ctx.channel().attr(KEY_AUTHENTICATION).set(supportedAuth[0]);
+
+            System.out.printf("Supported authentication methods: %s\n", Arrays.toString(supportedAuth));
 
             return ctx.alloc().ioBuffer(2, 2) //respond with server choice
                     .writeByte(VERSION) //VER
-                    .writeByte(SUPPORTED_AUTH[0].ordinal()); //CAUTH
+                    .writeByte(supportedAuth[0].ordinal()); //CAUTH
         }
 
         @Override

@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -42,8 +43,8 @@ public class SOCKS5ServerHandler extends ByteToMessageDecoder {
             checkState(!in.isReadable(), "state was unable to read all data!");
             switch (this.state) {
                 case GREETING:
-                    out.add(response);
                     this.state = this.state.next();
+                    ctx.writeAndFlush(response);
                     break;
                 case CONNECTION_REQUEST:
                     System.out.printf("Requested %s to address %s\n", ctx.channel().attr(KEY_COMMAND).get(), ctx.channel().attr(KEY_ADDRESS).get());
