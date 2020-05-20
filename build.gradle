@@ -26,9 +26,11 @@ ext {
     turbotunnelVersion = "0.0.1"
 
     //dependency things
+    gsonVersion = "2.8.5"
     junitVersion = "4.12"
     lombokVersion = "1.16.20"
-    porklibVersion = "0.5.4-SNAPSHOT"
+    nettyVersion = "4.1.36.Final"
+    porklibVersion = "0.5.5-SNAPSHOT"
 }
 
 group "net.daporkchop"
@@ -43,7 +45,6 @@ tasks.withType(JavaCompile) {
 }
 
 repositories {
-    mavenLocal()
     maven {
         name = "DaPorkchop_"
         url = "https://maven.daporkchop.net/"
@@ -58,6 +59,8 @@ configurations {
 
 dependencies {
     shade "net.daporkchop.lib:netty:$porklibVersion"
+
+    shade "io.netty:netty-handler:$nettyVersion"
 
     testCompile "junit:junit:$junitVersion"
 

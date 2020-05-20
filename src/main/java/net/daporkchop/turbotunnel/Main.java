@@ -20,11 +20,37 @@
 
 package net.daporkchop.turbotunnel;
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import net.daporkchop.lib.network.nettycommon.PorkNettyHelper;
+import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
+import net.daporkchop.turbotunnel.protocol.socks.SOCKS5ServerHandler;
+
+import java.util.Scanner;
+
 /**
  * @author DaPorkchop_
  */
 public class Main {
+    public static final EventLoopGroupPool LOOP_GROUP_POOL = PorkNettyHelper.getPoolTCP();
+
     public static void main(String... args) {
-        System.out.println("Hello world!");
+        Channel channel = new ServerBootstrap()
+                .channelFactory(LOOP_GROUP_POOL.transport().channelFactorySocketServer())
+                .group(LOOP_GROUP_POOL.get())
+                .childHandler(new ChannelInitializer<Channel>() {
+                    @Override
+                    protected void initChannel(Channel ch) throws Exception {
+                        System.out.printf("Connection from %s to %s\n", ch.remoteAddress(), ch.localAddress());
+                        ch.pipeline().addLast(new SOCKS5ServerHandler());
+                    }
+                })
+                .bind(1081).syncUninterruptibly().channel();
+        channel.closeFuture().addListener(f -> LOOP_GROUP_POOL.release(channel.eventLoop().parent()));
+
+        new Scanner(System.in).nextLine();
+        channel.close();
     }
 }
