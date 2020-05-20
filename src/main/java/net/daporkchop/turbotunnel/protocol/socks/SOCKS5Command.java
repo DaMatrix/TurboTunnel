@@ -46,7 +46,7 @@ public enum SOCKS5Command {
         @Override
         public Future<Channel> handle(@NonNull Channel channel, @NonNull SOCKS5ServerState state) throws Exception {
             InetAddress remoteAddress = state.address().getAddress();
-            System.out.printf("Choosing binding for remote address: %s\n", state.address());
+            //System.out.printf("Choosing binding for remote address: %s\n", state.address());
             InetAddress[] v4Addresses;
             InetAddress[] v6Addresses;
             if (remoteAddress == null) {

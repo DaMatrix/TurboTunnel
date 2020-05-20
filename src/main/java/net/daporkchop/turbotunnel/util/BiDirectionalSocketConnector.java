@@ -42,7 +42,7 @@ public class BiDirectionalSocketConnector extends ChannelInboundHandlerAdapter {
         this.b = b;
         a.config().setAutoRead(false);
         b.config().setAutoRead(false);
-        a.pipeline().replace("socks5", "forward", this);
+        a.pipeline().addLast("forward", this);
         b.pipeline().addLast("forward", this);
         a.read();
         b.read();

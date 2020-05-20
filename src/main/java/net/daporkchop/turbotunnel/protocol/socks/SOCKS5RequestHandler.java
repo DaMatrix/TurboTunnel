@@ -132,6 +132,7 @@ public final class SOCKS5RequestHandler extends ChannelInboundHandlerAdapter {
                         buf.writeShort(address.getPort());
 
                         ctx.channel().writeAndFlush(buf);
+                        ctx.channel().pipeline().remove(this);
                         new BiDirectionalSocketConnector(ctx.channel(), channel);
 
                         System.out.printf("Request from %s: %s (handled with local address: %s)\n", ctx.channel().remoteAddress(), state, channel.localAddress());

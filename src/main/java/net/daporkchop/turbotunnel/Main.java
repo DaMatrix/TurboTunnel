@@ -35,6 +35,7 @@ public class Main {
     public static void main(String... args) {
         try (SOCKS5Server server = new SOCKS5Server(
                 PorkNettyHelper.getPoolTCP(),
+                //new AllInterfacesRoundRobinBalancer(Pattern.compile("^enp")))) {
                 new AllInterfacesRoundRobinBalancer(Pattern.compile("^(?:wlp|enp)")))) {
             new Scanner(System.in).nextLine();
         }

@@ -75,10 +75,7 @@ public class AllInterfacesRoundRobinBalancer implements InetAddressBalancer {
         }
 
         checkState(!list.isEmpty(), "No addresses found?!?!");
-        System.out.println(list.stream().map(InetAddress::toString).collect(Collectors.joining("\n")));
-        InetAddress address = list.get(ThreadLocalRandom.current().nextInt(list.size()));
-        System.out.println("Using " + address);
-        return address;
-        //return list.get(ThreadLocalRandom.current().nextInt(list.size()));
+        //System.out.println(list.stream().map(InetAddress::toString).collect(Collectors.joining("\n")));
+        return list.get(ThreadLocalRandom.current().nextInt(list.size()));
     }
 }
