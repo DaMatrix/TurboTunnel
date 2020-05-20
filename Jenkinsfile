@@ -16,7 +16,7 @@ String getDiscordMessage() {
 
     msg += "\n**Artifacts:**"
     currentBuild.rawBuild.getArtifacts().any {
-        msg += "\n- [" + it.getDisplayPath() + "](" + env.BUILD_URL + "artifact/" + it.getHref() + ")"
+        def line = "\n- [" + it.getDisplayPath() + "](" + env.BUILD_URL + "artifact/" + it.getHref() + ")"
         if (msg.length() + line.length() <= 2000)   {
             msg += line
             return
