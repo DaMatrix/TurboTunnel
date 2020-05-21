@@ -67,7 +67,7 @@ public final class HTTPRequestHandler extends ChannelInboundHandlerAdapter {
         HTTPServerState state = ctx.channel().attr(HTTPServer.STATE_KEY).get();
 
         String request = data.toString(StandardCharsets.US_ASCII);
-        System.out.println(request);
+        //System.out.println(request);
         checkState(request.endsWith("\r\n\r\n"));
         Matcher requestMatcher = REQUEST_MATCHER_CACHE.get().reset(request);
         checkState(requestMatcher.find());
@@ -82,7 +82,7 @@ public final class HTTPRequestHandler extends ChannelInboundHandlerAdapter {
                 checkState(headerMatcher.reset(splitHeaders[i]).find(), splitHeaders[i]);
                 checkState(state.headers().putIfAbsent(headerMatcher.group(1), headerMatcher.group(2)) == null, headerMatcher.group(1));
             }
-            System.out.println("Headers: " + state.headers());
+            //System.out.println("Headers: " + state.headers());
         }
 
         switch (requestMatcher.group(1)) {
