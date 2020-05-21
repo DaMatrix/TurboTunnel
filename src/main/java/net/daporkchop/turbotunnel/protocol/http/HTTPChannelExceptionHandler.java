@@ -20,32 +20,40 @@
 
 package net.daporkchop.turbotunnel.protocol.http;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.TreeMap;
+import java.nio.charset.StandardCharsets;
+
+import static net.daporkchop.turbotunnel.protocol.http.HTTPServer.STATE_KEY;
 
 /**
  * @author DaPorkchop_
  */
-@ToString(exclude = {"server"})
-@Getter
-@Setter
-@Accessors(fluent = true)
-public final class HTTPServerState {
-    private final HTTPServer server;
-    private final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    @NonNull
-    private String httpVersion;
-    @NonNull
-    private InetSocketAddress address;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@ChannelHandler.Sharable
+public final class HTTPChannelExceptionHandler extends ChannelInboundHandlerAdapter {
+    public static final HTTPChannelExceptionHandler INSTANCE = new HTTPChannelExceptionHandler();
 
-    public HTTPServerState(@NonNull HTTPServer server) {
-        this.server = server;
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        HTTPServerState state = ctx.channel().attr(STATE_KEY).get();
+        ByteBuf buf = ctx.alloc().ioBuffer();
+
+        if (state != null && state.httpVersion() != null)   {
+            buf.writeCharSequence(state.httpVersion(), StandardCharsets.US_ASCII);
+            buf.writeByte(' ');
+        } else {
+            buf.writeCharSequence("HTTP/1.1 ", StandardCharsets.US_ASCII);
+        }
+        buf.writeCharSequence("500 Internal Server Error\r\n\r\n", StandardCharsets.US_ASCII);
+
+        ctx.channel().writeAndFlush(buf);
+        ctx.channel().close();
+        cause.printStackTrace();
     }
 }

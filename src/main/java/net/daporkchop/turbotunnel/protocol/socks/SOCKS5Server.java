@@ -32,6 +32,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.network.nettycommon.eventloopgroup.pool.EventLoopGroupPool;
 import net.daporkchop.turbotunnel.loadbalance.InetAddressBalancer;
+import net.daporkchop.turbotunnel.util.CloseChannelOnExceptionHandler;
 import net.daporkchop.turbotunnel.util.NoopChannelInitializer;
 
 /**
@@ -49,7 +50,7 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
     @Getter
     private final InetAddressBalancer balancer;
 
-    public SOCKS5Server(@NonNull EventLoopGroupPool loopGroupPool, @NonNull InetAddressBalancer balancer) {
+    public SOCKS5Server(@NonNull EventLoopGroupPool loopGroupPool, @NonNull InetAddressBalancer balancer, int port) {
         this.loopGroupPool = loopGroupPool;
         this.balancer = balancer;
         this.loopGroup = loopGroupPool.get();
@@ -60,7 +61,7 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
                 .childHandler(this)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.AUTO_READ, false)
-                .bind(1081).channel();
+                .bind(port).channel();
         this.serverChannel.closeFuture().addListener(f -> this.loopGroupPool.release(this.loopGroup));
 
         this.clientBootstrap = new Bootstrap()
@@ -76,7 +77,9 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
         //System.out.println(this.serverChannel);
         ch.attr(STATE_KEY).set(new SOCKS5ServerState(this));
 
-        ch.pipeline().addLast("socks5", SOCKS5GreetingHandler.INSTANCE);
+        ch.pipeline()
+                .addLast("socks5", SOCKS5GreetingHandler.INSTANCE)
+                .addLast("exception", CloseChannelOnExceptionHandler.INSTANCE);
     }
 
     @Override

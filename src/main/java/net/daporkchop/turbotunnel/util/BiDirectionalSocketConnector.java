@@ -21,6 +21,7 @@
 package net.daporkchop.turbotunnel.util;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -42,8 +43,10 @@ public class BiDirectionalSocketConnector extends ChannelInboundHandlerAdapter {
         this.b = b;
         a.config().setAutoRead(false);
         b.config().setAutoRead(false);
-        a.pipeline().addLast("forward", this);
-        b.pipeline().addLast("forward", this);
+        a.pipeline().addFirst("forward", this);
+        b.pipeline().addFirst("forward", this);
+        a.closeFuture().addListener((ChannelFutureListener) f -> b.close());
+        b.closeFuture().addListener((ChannelFutureListener) f -> a.close());
         a.read();
         b.read();
     }
@@ -66,12 +69,5 @@ public class BiDirectionalSocketConnector extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         this.a.close();
         this.b.close();
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        this.a.close();
-        this.b.close();
-        cause.printStackTrace();
     }
 }

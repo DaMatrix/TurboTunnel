@@ -18,34 +18,25 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.http;
+package net.daporkchop.turbotunnel.util;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.TreeMap;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
  * @author DaPorkchop_
  */
-@ToString(exclude = {"server"})
-@Getter
-@Setter
-@Accessors(fluent = true)
-public final class HTTPServerState {
-    private final HTTPServer server;
-    private final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    @NonNull
-    private String httpVersion;
-    @NonNull
-    private InetSocketAddress address;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@ChannelHandler.Sharable
+public final class CloseChannelOnExceptionHandler extends ChannelInboundHandlerAdapter {
+    public static final CloseChannelOnExceptionHandler INSTANCE = new CloseChannelOnExceptionHandler();
 
-    public HTTPServerState(@NonNull HTTPServer server) {
-        this.server = server;
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        ctx.channel().close();
+        cause.printStackTrace();
     }
 }

@@ -49,7 +49,7 @@ public class HTTPServer extends ChannelInitializer<Channel> implements AutoClose
     @Getter
     private final InetAddressBalancer balancer;
 
-    public HTTPServer(@NonNull EventLoopGroupPool loopGroupPool, @NonNull InetAddressBalancer balancer) {
+    public HTTPServer(@NonNull EventLoopGroupPool loopGroupPool, @NonNull InetAddressBalancer balancer, int port) {
         this.loopGroupPool = loopGroupPool;
         this.balancer = balancer;
         this.loopGroup = loopGroupPool.get();
@@ -60,7 +60,7 @@ public class HTTPServer extends ChannelInitializer<Channel> implements AutoClose
                 .childHandler(this)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.AUTO_READ, false)
-                .bind(1081).channel();
+                .bind(port).channel();
         this.serverChannel.closeFuture().addListener(f -> this.loopGroupPool.release(this.loopGroup));
 
         this.clientBootstrap = new Bootstrap()
@@ -76,7 +76,9 @@ public class HTTPServer extends ChannelInitializer<Channel> implements AutoClose
         //System.out.println(this.serverChannel);
         ch.attr(STATE_KEY).set(new HTTPServerState(this));
 
-        ch.pipeline().addLast("http", HTTPRequestHandler.INSTANCE);
+        ch.pipeline()
+                .addLast("http", HTTPRequestHandler.INSTANCE)
+                .addLast("exception", HTTPChannelExceptionHandler.INSTANCE);
     }
 
     @Override
