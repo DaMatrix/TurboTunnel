@@ -18,23 +18,29 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks;
+package net.daporkchop.turbotunnel.protocol.http;
 
-import io.netty.util.AttributeKey;
-import lombok.experimental.UtilityClass;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.net.InetSocketAddress;
 
 /**
- * Various constant values used by the SOCKS5 protocol.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class SOCKS5 {
-    public static final int VERSION = 0x05;
+@ToString(exclude = {"server"})
+@Getter
+@Setter
+@Accessors(fluent = true)
+public final class HTTPServerState {
+    private final HTTPServer server;
+    @NonNull
+    private InetSocketAddress address;
 
-    public static final int TYPE_IPV4 = 0x01;
-    public static final int TYPE_DOMAIN = 0x03;
-    public static final int TYPE_IPV6 = 0x04;
+    public HTTPServerState(@NonNull HTTPServer server) {
+        this.server = server;
+    }
 }

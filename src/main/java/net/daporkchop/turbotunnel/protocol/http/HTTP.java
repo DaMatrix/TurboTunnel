@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks;
+package net.daporkchop.turbotunnel.protocol.http;
 
 import io.netty.util.AttributeKey;
 import lombok.experimental.UtilityClass;
@@ -26,12 +26,12 @@ import lombok.experimental.UtilityClass;
 import java.net.InetSocketAddress;
 
 /**
- * Various constant values used by the SOCKS5 protocol.
+ * Various constant values used by the HTTP protocol.
  *
  * @author DaPorkchop_
  */
 @UtilityClass
-public class SOCKS5 {
+public class HTTP {
     public static final int VERSION = 0x05;
 
     public static final int TYPE_IPV4 = 0x01;

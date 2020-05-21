@@ -27,6 +27,7 @@ import net.daporkchop.lib.common.function.throwing.EFunction;
 import net.daporkchop.lib.network.nettycommon.PorkNettyHelper;
 import net.daporkchop.turbotunnel.loadbalance.FixedRandomBalancer;
 import net.daporkchop.turbotunnel.loadbalance.InetAddressBalancer;
+import net.daporkchop.turbotunnel.protocol.http.HTTPServer;
 import net.daporkchop.turbotunnel.protocol.socks.SOCKS5Server;
 
 import java.io.BufferedReader;
@@ -67,7 +68,10 @@ public class Main {
                         .toArray(Inet6Address[]::new),
                 obj.get("prefer6").getAsBoolean());
 
-        try (SOCKS5Server server = new SOCKS5Server(PorkNettyHelper.getPoolTCP(), balancer)) {
+        /*try (SOCKS5Server server = new SOCKS5Server(PorkNettyHelper.getPoolTCP(), balancer)) {
+            new Scanner(System.in).nextLine();
+        }*/
+        try (HTTPServer server = new HTTPServer(PorkNettyHelper.getPoolTCP(), balancer)) {
             new Scanner(System.in).nextLine();
         }
     }

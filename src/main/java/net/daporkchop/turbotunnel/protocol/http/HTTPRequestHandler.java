@@ -18,23 +18,38 @@
  *
  */
 
-package net.daporkchop.turbotunnel.protocol.socks;
+package net.daporkchop.turbotunnel.protocol.http;
 
-import io.netty.util.AttributeKey;
-import lombok.experimental.UtilityClass;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.turbotunnel.protocol.socks.SOCKS5Server.*;
 
 /**
- * Various constant values used by the SOCKS5 protocol.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class SOCKS5 {
-    public static final int VERSION = 0x05;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Sharable
+public final class HTTPRequestHandler extends ChannelInboundHandlerAdapter {
+    public static final HTTPRequestHandler INSTANCE = new HTTPRequestHandler();
 
-    public static final int TYPE_IPV4 = 0x01;
-    public static final int TYPE_DOMAIN = 0x03;
-    public static final int TYPE_IPV6 = 0x04;
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().read();
+        super.channelRegistered(ctx);
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        checkState(msg instanceof ByteBuf, "invalid message");
+        ByteBuf data = (ByteBuf) msg;
+
+        System.out.println(data.toString(StandardCharsets.US_ASCII));
+    }
 }
