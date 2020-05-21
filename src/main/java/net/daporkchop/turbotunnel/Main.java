@@ -68,11 +68,17 @@ public class Main {
                         .toArray(Inet6Address[]::new),
                 obj.get("prefer6").getAsBoolean());
 
-        /*try (SOCKS5Server server = new SOCKS5Server(PorkNettyHelper.getPoolTCP(), balancer)) {
+        JsonObject http = obj.getAsJsonObject("http");
+        JsonObject socks = obj.getAsJsonObject("socks");
+
+        System.out.println("Starting...");
+        try (HTTPServer httpServer = http.get("enable").getAsBoolean() ? new HTTPServer(PorkNettyHelper.getPoolTCP(), balancer, http.get("port").getAsInt()) : null;
+             SOCKS5Server socksServer = socks.get("enable").getAsBoolean() ? new SOCKS5Server(PorkNettyHelper.getPoolTCP(), balancer, socks.get("port").getAsInt()) : null) {
+            System.out.println("Started!");
             new Scanner(System.in).nextLine();
-        }*/
-        try (HTTPServer server = new HTTPServer(PorkNettyHelper.getPoolTCP(), balancer, 1081)) {
-            new Scanner(System.in).nextLine();
+            System.out.println("Stopping...");
         }
+        PorkNettyHelper.getPoolTCP().shutdown().syncUninterruptibly();
+        System.out.println("Stopped!");
     }
 }

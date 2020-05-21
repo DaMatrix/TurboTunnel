@@ -61,7 +61,7 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
                 .childHandler(this)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.AUTO_READ, false)
-                .bind(port).channel();
+                .bind(port).syncUninterruptibly().channel();
         this.serverChannel.closeFuture().addListener(f -> this.loopGroupPool.release(this.loopGroup));
 
         this.clientBootstrap = new Bootstrap()
@@ -84,7 +84,7 @@ public class SOCKS5Server extends ChannelInitializer<Channel> implements AutoClo
 
     @Override
     public void close() {
-        this.serverChannel.close();
+        this.serverChannel.close().syncUninterruptibly();
     }
 
     public Bootstrap getClientBootstrap() {
